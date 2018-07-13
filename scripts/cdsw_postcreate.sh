@@ -1,6 +1,6 @@
 #!/bin/sh -x
-exec >~/instancePostCreateScripts.log 2>&1
-echo Starting instancePostCreateScript
+exec >~/cdswPostCreateScripts.log 2>&1
+echo Starting CDSW Post Create Scripts
 
 function isCDSWMaster() {
     lsblk | grep "cdsw" | wc -l
@@ -24,18 +24,19 @@ function get_public_ip() {
 
 if [ $(isCDSWMaster) -eq 1 ]
 then
-echo "This is the CDSW master node"
+    echo "This is the CDSW master node"
 
-serviceName=$(curl --user $CM_USERNAME:$CM_PASSWORD --request GET http://$DEPLOYMENT_HOST_PORT/api/v18/clusters/$CLUSTER_NAME/services  | grep "CD-CDSW" | grep "name" | cut -d ':' -f 2 | cut -d '"' -f2)
+    serviceName=$(curl --user $CM_USERNAME:$CM_PASSWORD --request GET http://$DEPLOYMENT_HOST_PORT/api/v18/clusters/$CLUSTER_NAME/services  | grep "CD-CDSW" | grep "name" | cut -d ':' -f 2 | cut -d '"' -f2)
 
-config=$(curl --user $CM_USERNAME:$CM_PASSWORD --request GET http://$DEPLOYMENT_HOST_PORT/api/v18/clusters/$CLUSTER_NAME/services/$serviceName/config)
+    config=$(curl --user $CM_USERNAME:$CM_PASSWORD --request GET http://$DEPLOYMENT_HOST_PORT/api/v18/clusters/$CLUSTER_NAME/services/$serviceName/config)
 
-cdswMasterPublicIp=$(get_public_ip)
-newConfig=$(echo $config| sed "s/cdsw.placeholder-domain.com/cdsw.$cdswMasterPublicIp.nip.io/g")
+    cdswMasterPublicIp=$(get_public_ip)
+    newConfig=$(echo $config| sed "s/cdsw.placeholder-domain.com/cdsw.$cdswMasterPublicIp.nip.io/g")
 
-curl --user $CM_USERNAME:$CM_PASSWORD -d "$newConfig" -H "Content-Type: application/json" -X PUT http://$DEPLOYMENT_HOST_PORT/api/v18/clusters/$CLUSTER_NAME/services/$serviceName/config
+    curl --user $CM_USERNAME:$CM_PASSWORD -d "$newConfig" -H "Content-Type: application/json" -X PUT http://$DEPLOYMENT_HOST_PORT/api/v18/clusters/$CLUSTER_NAME/services/$serviceName/config
 
-curl --user $CM_USERNAME:$CM_PASSWORD -d "$serviceName" -X POST http://$DEPLOYMENT_HOST_PORT/api/v18/clusters/$CLUSTER_NAME/services/$serviceName/commands/restart
+    curl --user $CM_USERNAME:$CM_PASSWORD -d "$serviceName" -X POST http://$DEPLOYMENT_HOST_PORT/api/v18/clusters/$CLUSTER_NAME/services/$serviceName/commands/restart
 
 fi
-exit 0
+
+#removed exit 0 so that hdfs 
